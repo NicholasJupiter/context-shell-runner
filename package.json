@@ -1,14 +1,45 @@
 {
   "name": "context-shell-runner",
   "displayName": "Context Shell Runner",
-  "description": "在 VS Code 资源管理器中通过右键上下文执行自定义 Shell 命令，支持精确获取文件或文件夹路径并区分资源类型。",
+  "description": "Run custom shell commands from Explorer context menu with precise file/folder path detection and variable injection.",
   "version": "0.0.1",
+  "publisher": "nicholasjupiter",
+  "author": {
+    "name": "NicholasJupiter"
+  },
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NicholasJupiter/context-shell-runner"
+  },
+  "bugs": {
+    "url": "https://github.com/NicholasJupiter/context-shell-runner/issues"
+  },
+  "homepage": "https://github.com/NicholasJupiter/context-shell-runner#readme",
   "engines": {
     "vscode": "^1.108.1"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Snippets"
   ],
+  "keywords": [
+    "shell",
+    "terminal",
+    "command",
+    "context menu",
+    "explorer",
+    "right-click",
+    "automation",
+    "go-zero",
+    "goctl",
+    "script runner"
+  ],
+  "galleryBanner": {
+    "color": "#667eea",
+    "theme": "dark"
+  },
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
