@@ -2,7 +2,7 @@
   "name": "context-shell-runner",
   "displayName": "Context Shell Runner",
   "description": "Run custom shell commands from Explorer context menu with precise file/folder path detection and variable injection.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "nicholasjupiter",
   "author": {
     "name": "NicholasJupiter"
