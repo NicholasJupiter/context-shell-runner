@@ -1,0 +1,117 @@
+{
+  "name": "context-shell-runner",
+  "displayName": "Context Shell Runner",
+  "description": "在 VS Code 资源管理器中通过右键上下文执行自定义 Shell 命令，支持精确获取文件或文件夹路径并区分资源类型。",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.108.1"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "context-shell-runner.run",
+        "title": "Context Shell Runner: Run"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "context-shell-runner.run",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Context Shell Runner",
+      "properties": {
+        "contextShellRunner.commands": {
+          "type": "object",
+          "default": {
+            "show-path": {
+              "description": "显示资源完整路径",
+              "command": "echo '完整路径: ${path}'",
+              "when": "any"
+            },
+            "show-info": {
+              "description": "显示资源详细信息",
+              "command": "echo '名称: ${name}' && echo '目录: ${dir}' && echo '是文件: ${isFile}' && echo '是文件夹: ${isFolder}' && echo '工作区: ${workspace}'",
+              "when": "any"
+            },
+            "list-files": {
+              "description": "列出文件夹内容",
+              "command": "ls -la",
+              "when": "folder"
+            },
+            "file-info": {
+              "description": "显示文件详情 (file/wc)",
+              "command": "file '${path}' && wc -l '${path}'",
+              "when": "file"
+            }
+          },
+          "markdownDescription": "自定义 Shell 命令配置。\n\n## 支持的变量\n\n| 变量 | 说明 |\n|------|------|\n| `${path}` | 右键资源的**完整绝对路径** |\n| `${dir}` | 资源所在**目录**（文件返回父目录，文件夹返回自身路径） |\n| `${name}` | 资源的**文件名或文件夹名**（不含路径） |\n| `${isFile}` | 是否为文件（`true` / `false`） |\n| `${isFolder}` | 是否为文件夹（`true` / `false`） |\n| `${workspace}` | 当前 **VS Code 工作区根目录**路径 |\n\n## 配置示例\n\n```json\n\"contextShellRunner.commands\": {\n  \"my-command\": {\n    \"description\": \"命令描述\",\n    \"command\": \"echo ${path}\",\n    \"when\": \"file\",\n    \"shell\": \"bash\",\n    \"loginShell\": true\n  }\n}\n```",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "命令描述，显示在 QuickPick 选择菜单中"
+              },
+              "command": {
+                "type": "string",
+                "markdownDescription": "要执行的 shell 命令。支持变量：`${path}` `${dir}` `${name}` `${isFile}` `${isFolder}` `${workspace}`"
+              },
+              "when": {
+                "type": "string",
+                "enum": ["file", "folder", "any"],
+                "default": "any",
+                "markdownDescription": "命令可用范围：\n- `file` - 仅当右键**文件**时显示\n- `folder` - 仅当右键**文件夹**时显示\n- `any` - 文件和文件夹都显示"
+              },
+              "shell": {
+                "type": "string",
+                "default": "bash",
+                "description": "使用的 shell 程序，如 bash、sh、zsh"
+              },
+              "loginShell": {
+                "type": "boolean",
+                "default": false,
+                "markdownDescription": "是否使用登录 shell：\n- `true` → 使用 `bash -lc` （加载 .bash_profile 等配置）\n- `false` → 使用 `bash -c`"
+              }
+            },
+            "required": ["description", "command"]
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.108.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.52.0",
+    "eslint": "^9.39.2",
+    "esbuild": "^0.27.2",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}

@@ -1,0 +1,312 @@
+好 👍
+下面是一份**「可以直接丢给 AI 用来生成代码的完整项目 MD 文档」**。
+这是**工程级 Prompt 文档**，目标非常明确：让 AI 按这个规格把 VS Code 插件完整实现出来。
+
+你可以 **原封不动复制**，保存为：
+
+```
+context-shell-runner.md
+```
+
+然后交给任意 AI（Claude / GPT / Cursor / Copilot Chat）。
+
+---
+
+````md
+# Context Shell Runner
+
+## 项目概述
+
+Context Shell Runner 是一个 VS Code 扩展，定位为 **Command Runner 的增强版**。
+
+它解决了现有命令执行类插件的核心缺陷：
+
+- 无法获取 Explorer 中“右键的真实资源”
+- 无法区分右键的是文件还是文件夹
+- 只能依赖当前选中项（selection），而非右键上下文（context）
+
+本插件允许用户：
+
+- 在 VS Code Explorer 中 **右键文件或文件夹**
+- 精确获取被右键资源的路径（URI）
+- 判断资源类型（文件 / 文件夹）
+- 根据用户配置执行自定义 Shell 命令
+- 将路径、类型等信息注入到命令中
+
+插件主要面向工程自动化场景，如：
+- go-zero api / rpc 代码生成
+- proto / api 目录右键生成代码
+- 对特定目录执行脚本
+
+---
+
+## 插件基本信息
+
+- Extension Identifier: `context-shell-runner`
+- Display Name: Context Shell Runner
+- Description（中文）:
+  在 VS Code 资源管理器中通过右键上下文执行自定义 Shell 命令，支持精确获取文件或文件夹路径并区分资源类型。
+- 插件类型：VS Code Extension（TypeScript）
+
+---
+
+## 设计目标
+
+### 核心目标
+
+1. 基于 **Explorer 右键上下文（context menu）**
+2. 获取被右键资源的真实 URI
+3. 支持文件与文件夹两种资源类型
+4. 执行用户在 settings.json 中配置的 shell 命令
+5. 输出结果到 VS Code 内置终端
+
+### 明确不做的事（第一版）
+
+- 不支持复杂 UI
+- 不支持多选资源（MVP 阶段）
+- 不做命令市场 / 云同步
+- 不做脚本编辑器
+
+---
+
+## 插件工作流程
+
+1. 用户在 Explorer 中右键某个文件或文件夹
+2. 选择菜单项：`Context Shell Runner: Run`
+3. VS Code 将被右键资源的 `uri` 传给插件命令
+4. 插件执行以下步骤：
+   - 从 `uri.fsPath` 获取绝对路径
+   - 使用 `fs.stat` 判断资源类型（文件 / 文件夹）
+   - 读取用户配置的命令列表
+   - 根据资源类型过滤可用命令
+5. 使用 QuickPick 弹出可执行命令列表
+6. 用户选择命令后：
+   - 注入路径变量
+   - 在 VS Code Terminal 中执行 shell
+7. 显示执行结果
+
+---
+
+## 右键菜单设计
+
+### 菜单注册位置
+
+- Explorer Context Menu
+
+### 菜单项
+
+- 标题：`Context Shell Runner: Run`
+- 命令 ID：`context-shell-runner.run`
+
+### 菜单显示规则
+
+- 对文件右键可见
+- 对文件夹右键可见
+- 不显示在编辑器右键菜单中
+
+---
+
+## 用户配置设计（settings.json）
+
+插件通过 settings.json 提供可配置的命令系统。
+
+### 配置示例
+
+```json
+{
+  "contextShellRunner.commands": {
+    "gozero-rpc": {
+      "description": "Generate go-zero rpc",
+      "command": "goctl rpc protoc *.proto --go_out=../ --go-grpc_out=../ --zrpc_out=../ -style=goZero",
+      "when": "folder",
+      "shell": "bash",
+      "loginShell": true
+    },
+    "gozero-api": {
+      "description": "Generate go-zero api",
+      "command": "goctl api go -api *.api -dir ../ -style=goZero",
+      "when": "file"
+    }
+  }
+}
+````
+
+---
+
+## 命令字段说明
+
+每个命令支持以下字段：
+
+* description
+  显示在 QuickPick 中的名称
+
+* command
+  要执行的 shell 命令字符串
+
+* when
+  控制命令可用范围：
+
+  * `"file"`   → 仅当右键资源是文件时可用
+  * `"folder"` → 仅当右键资源是文件夹时可用
+  * `"any"`    → 文件 / 文件夹均可用
+
+* shell（可选）
+  使用的 shell，例如：bash / sh / zsh
+  默认：bash
+
+* loginShell（可选）
+  是否使用登录 shell
+  true → `bash -lc`
+  false → `bash -c`
+
+---
+
+## 变量注入规则（非常重要）
+
+插件在执行命令前，需要对 command 字符串进行变量替换。
+
+### 支持的变量
+
+* `${path}`
+  右键资源的绝对路径
+
+* `${dir}`
+  如果是文件：文件所在目录
+  如果是文件夹：等于 `${path}`
+
+* `${name}`
+  文件名或文件夹名
+
+* `${isFile}`
+  true / false
+
+* `${isFolder}`
+  true / false
+
+* `${workspace}`
+  当前 workspace 根目录（如果存在）
+
+### 示例
+
+```bash
+cd ${path} && goctl rpc protoc *.proto
+```
+
+---
+
+## Shell 执行策略
+
+### 执行方式
+
+* 使用 VS Code Terminal（而不是 exec 静默执行）
+* 推荐使用 `vscode.window.createTerminal`
+* 每次执行可创建新 terminal，或复用一个固定 terminal
+
+### Shell 构造规则
+
+* loginShell = true
+  使用：
+
+  ```bash
+  bash -lc "<command>"
+  ```
+
+* loginShell = false
+  使用：
+
+  ```bash
+  bash -c "<command>"
+  ```
+
+---
+
+## 技术实现要求
+
+### 使用技术栈
+
+* TypeScript
+* VS Code Extension API
+* Node.js API（fs / path / child_process）
+
+### 关键 API
+
+* `vscode.commands.registerCommand`
+* `vscode.Uri`
+* `fs.statSync`
+* `vscode.window.createTerminal`
+* `vscode.window.showQuickPick`
+
+---
+
+## 插件目录结构（建议）
+
+```
+context-shell-runner/
+├── src/
+│   └── extension.ts
+├── package.json
+├── tsconfig.json
+├── README.md
+└── CHANGELOG.md
+```
+
+---
+
+## extension.ts 核心职责
+
+extension.ts 需要完成以下事情：
+
+1. 注册命令 `context-shell-runner.run`
+2. 接收 Explorer 右键传入的 `uri`
+3. 判断资源类型（文件 / 文件夹）
+4. 读取用户配置 `contextShellRunner.commands`
+5. 过滤可用命令
+6. 使用 QuickPick 让用户选择命令
+7. 替换变量
+8. 在 Terminal 中执行 shell
+
+---
+
+## package.json 核心职责
+
+1. 注册 command
+2. 注册 explorer/context 菜单
+3. 注册 configuration schema（settings.json 提示）
+
+---
+
+## MVP（最小可行版本）要求
+
+第一版必须支持：
+
+* 文件 / 文件夹右键
+* 获取 fsPath
+* 判断 isFile / isFolder
+* 至少支持一个 shell 命令执行
+* 输出到终端
+
+---
+
+## 插件定位总结
+
+Context Shell Runner 是一个：
+
+* 面向工程师
+* 面向自动化
+* 面向右键上下文
+* 可配置
+* 不花哨但非常实用的 VS Code 扩展
+
+目标是成为：
+
+> “终于可以对 Explorer 右键文件夹执行 shell 的工具”
+
+---
+
+## 结束
+
+请严格按照本设计文档实现插件功能，优先保证正确性、稳定性和工程可维护性。
+
+```
+
+---
