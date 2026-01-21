@@ -62,28 +62,7 @@
       "properties": {
         "contextShellRunner.commands": {
           "type": "object",
-          "default": {
-            "show-path": {
-              "description": "显示资源完整路径",
-              "command": "echo '完整路径: ${path}'",
-              "when": "any"
-            },
-            "show-info": {
-              "description": "显示资源详细信息",
-              "command": "echo '名称: ${name}' && echo '目录: ${dir}' && echo '是文件: ${isFile}' && echo '是文件夹: ${isFolder}' && echo '工作区: ${workspace}'",
-              "when": "any"
-            },
-            "list-files": {
-              "description": "列出文件夹内容",
-              "command": "ls -la",
-              "when": "folder"
-            },
-            "file-info": {
-              "description": "显示文件详情 (file/wc)",
-              "command": "file '${path}' && wc -l '${path}'",
-              "when": "file"
-            }
-          },
+          "default": {},
           "markdownDescription": "自定义 Shell 命令配置。\n\n## 支持的变量\n\n| 变量 | 说明 |\n|------|------|\n| `${path}` | 右键资源的**完整绝对路径** |\n| `${dir}` | 资源所在**目录**（文件返回父目录，文件夹返回自身路径） |\n| `${name}` | 资源的**文件名或文件夹名**（不含路径） |\n| `${isFile}` | 是否为文件（`true` / `false`） |\n| `${isFolder}` | 是否为文件夹（`true` / `false`） |\n| `${workspace}` | 当前 **VS Code 工作区根目录**路径 |\n\n## 路径过滤\n\n| 字段 | 说明 |\n|------|------|\n| `pathContains` | 路径必须**包含**指定字符串 |\n| `pathPattern` | 路径必须匹配 **glob 模式** |\n\n## 配置示例\n\n```json\n\"contextShellRunner.commands\": {\n  \"gozero-rpc\": {\n    \"description\": \"Generate go-zero rpc\",\n    \"command\": \"goctl rpc protoc *.proto\",\n    \"when\": \"folder\",\n    \"pathContains\": \"proto\"\n  },\n  \"docker-build\": {\n    \"description\": \"Docker Build\",\n    \"command\": \"docker build -t ${name} .\",\n    \"pathPattern\": \"**/Dockerfile\"\n  }\n}\n```",
           "additionalProperties": {
             "type": "object",

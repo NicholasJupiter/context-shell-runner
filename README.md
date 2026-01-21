@@ -23,16 +23,25 @@
 3. 从弹出的命令列表中选择要执行的命令
 4. 命令将在终端中执行
 
-## 默认命令
+## 快速开始
 
-插件内置了以下示例命令：
+插件默认**没有配置任何命令**，需要在 `settings.json` 中添加你的命令。以下是一些示例：
 
-| 命令 | 描述 | 适用范围 |
-|------|------|----------|
-| `show-path` | 显示资源完整路径 | 文件/文件夹 |
-| `show-info` | 显示资源详细信息（所有变量） | 文件/文件夹 |
-| `list-files` | 列出文件夹内容 (ls -la) | 仅文件夹 |
-| `file-info` | 显示文件详情 (file/wc) | 仅文件 |
+```json
+{
+  "contextShellRunner.commands": {
+    "show-path": {
+      "description": "显示资源完整路径",
+      "command": "echo '完整路径: ${path}'"
+    },
+    "list-files": {
+      "description": "列出文件夹内容",
+      "command": "ls -la",
+      "when": "folder"
+    }
+  }
+}
+```
 
 ## 支持的变量
 
