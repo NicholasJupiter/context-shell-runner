@@ -2,7 +2,7 @@
   "name": "context-shell-runner",
   "displayName": "Context Shell Runner",
   "description": "Run custom shell commands from Explorer context menu with precise file/folder path detection and variable injection.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "nicholasjupiter",
   "author": {
     "name": "NicholasJupiter"
@@ -84,7 +84,7 @@
               "when": "file"
             }
           },
-          "markdownDescription": "自定义 Shell 命令配置。\n\n## 支持的变量\n\n| 变量 | 说明 |\n|------|------|\n| `${path}` | 右键资源的**完整绝对路径** |\n| `${dir}` | 资源所在**目录**（文件返回父目录，文件夹返回自身路径） |\n| `${name}` | 资源的**文件名或文件夹名**（不含路径） |\n| `${isFile}` | 是否为文件（`true` / `false`） |\n| `${isFolder}` | 是否为文件夹（`true` / `false`） |\n| `${workspace}` | 当前 **VS Code 工作区根目录**路径 |\n\n## 配置示例\n\n```json\n\"contextShellRunner.commands\": {\n  \"my-command\": {\n    \"description\": \"命令描述\",\n    \"command\": \"echo ${path}\",\n    \"when\": \"file\",\n    \"shell\": \"bash\",\n    \"loginShell\": true\n  }\n}\n```",
+          "markdownDescription": "自定义 Shell 命令配置。\n\n## 支持的变量\n\n| 变量 | 说明 |\n|------|------|\n| `${path}` | 右键资源的**完整绝对路径** |\n| `${dir}` | 资源所在**目录**（文件返回父目录，文件夹返回自身路径） |\n| `${name}` | 资源的**文件名或文件夹名**（不含路径） |\n| `${isFile}` | 是否为文件（`true` / `false`） |\n| `${isFolder}` | 是否为文件夹（`true` / `false`） |\n| `${workspace}` | 当前 **VS Code 工作区根目录**路径 |\n\n## 路径过滤\n\n| 字段 | 说明 |\n|------|------|\n| `pathContains` | 路径必须**包含**指定字符串 |\n| `pathPattern` | 路径必须匹配 **glob 模式** |\n\n## 配置示例\n\n```json\n\"contextShellRunner.commands\": {\n  \"gozero-rpc\": {\n    \"description\": \"Generate go-zero rpc\",\n    \"command\": \"goctl rpc protoc *.proto\",\n    \"when\": \"folder\",\n    \"pathContains\": \"proto\"\n  },\n  \"docker-build\": {\n    \"description\": \"Docker Build\",\n    \"command\": \"docker build -t ${name} .\",\n    \"pathPattern\": \"**/Dockerfile\"\n  }\n}\n```",
           "additionalProperties": {
             "type": "object",
             "properties": {
@@ -98,7 +98,11 @@
               },
               "when": {
                 "type": "string",
-                "enum": ["file", "folder", "any"],
+                "enum": [
+                  "file",
+                  "folder",
+                  "any"
+                ],
                 "default": "any",
                 "markdownDescription": "命令可用范围：\n- `file` - 仅当右键**文件**时显示\n- `folder` - 仅当右键**文件夹**时显示\n- `any` - 文件和文件夹都显示"
               },
@@ -111,9 +115,40 @@
                 "type": "boolean",
                 "default": false,
                 "markdownDescription": "是否使用登录 shell：\n- `true` → 使用 `bash -lc` （加载 .bash_profile 等配置）\n- `false` → 使用 `bash -c`"
+              },
+              "pathContains": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "markdownDescription": "路径必须**包含**指定的字符串才显示此命令。\n\n- 字符串：路径包含该字符串\n- 数组：路径包含数组中**任意一个**字符串\n\n示例：\n```json\n\"pathContains\": \"proto\"\n\"pathContains\": [\"proto\", \"api\"]\n```"
+              },
+              "pathPattern": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "markdownDescription": "路径必须匹配指定的 **glob 模式**才显示此命令。\n\n- 字符串：路径匹配该模式\n- 数组：路径匹配数组中**任意一个**模式\n\n示例：\n```json\n\"pathPattern\": \"**/proto/**\"\n\"pathPattern\": [\"**/proto/**\", \"**/api/**\"]\n```"
               }
             },
-            "required": ["description", "command"]
+            "required": [
+              "description",
+              "command"
+            ]
           }
         }
       }
@@ -134,15 +169,19 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.108.1",
+    "@types/minimatch": "^5.1.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.52.0",
-    "eslint": "^9.39.2",
+    "@types/vscode": "^1.108.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.2",
+    "eslint": "^9.39.2",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "typescript-eslint": "^8.52.0"
+  },
+  "dependencies": {
+    "minimatch": "^10.1.1"
   }
 }

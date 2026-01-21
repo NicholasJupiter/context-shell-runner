@@ -12,6 +12,7 @@
 - 在 VS Code Explorer 中**右键文件或文件夹**
 - 精确获取被右键资源的路径（URI）
 - 判断资源类型（文件 / 文件夹）
+- **路径过滤** - 根据路径包含字符串或 glob 模式显示/隐藏命令
 - 根据用户配置执行自定义 Shell 命令
 - 将路径、类型等信息注入到命令中
 
@@ -71,12 +72,16 @@
 | `description` | ✅ | 命令描述，显示在 QuickPick 选择菜单中 |
 | `command` | ✅ | 要执行的 shell 命令，支持变量替换 |
 | `when` | ❌ | 命令可用范围：`file`（仅文件）、`folder`（仅文件夹）、`any`（默认，两者皆可） |
+| `pathContains` | ❌ | 路径必须**包含**指定字符串才显示命令（支持字符串或字符串数组） |
+| `pathPattern` | ❌ | 路径必须匹配 **glob 模式**才显示命令（支持字符串或字符串数组） |
 | `shell` | ❌ | 使用的 shell 程序，默认 `bash`，可选 `sh`、`zsh` 等 |
 | `loginShell` | ❌ | 是否使用登录 shell：`true` → `bash -lc`（加载 .bash_profile 等配置），`false` → `bash -c`（默认） |
 
 ## 配置示例
 
-### go-zero 代码生成
+### go-zero 代码生成（带路径过滤）
+
+只在 `proto` 目录下显示 RPC 生成命令，只在 `api` 目录下显示 API 生成命令：
 
 ```json
 {
@@ -85,13 +90,44 @@
       "description": "Generate go-zero rpc",
       "command": "goctl rpc protoc *.proto --go_out=../ --go-grpc_out=../ --zrpc_out=../ -style=goZero",
       "when": "folder",
+      "pathContains": "proto",
       "shell": "bash",
       "loginShell": true
     },
     "gozero-api": {
       "description": "Generate go-zero api",
       "command": "goctl api go -api *.api -dir ../ -style=goZero",
-      "when": "file"
+      "when": "folder",
+      "pathContains": "api"
+    }
+  }
+}
+```
+
+### 路径过滤示例
+
+```json
+{
+  "contextShellRunner.commands": {
+    "proto-lint": {
+      "description": "Lint proto files",
+      "command": "buf lint",
+      "pathContains": "proto"
+    },
+    "npm-install": {
+      "description": "npm install",
+      "command": "npm install",
+      "pathPattern": "**/package.json"
+    },
+    "docker-build": {
+      "description": "Docker Build",
+      "command": "docker build -t ${name} .",
+      "pathPattern": ["**/Dockerfile", "**/docker-compose.yml"]
+    },
+    "go-test": {
+      "description": "Go Test",
+      "command": "go test ./...",
+      "pathContains": ["_test.go", "go.mod"]
     }
   }
 }
@@ -135,6 +171,12 @@
 - **自定义脚本** - 任何可以通过 shell 执行的操作
 
 ## Release Notes
+
+### 0.0.2
+
+- 新增 `pathContains` 配置：根据路径包含字符串过滤命令
+- 新增 `pathPattern` 配置：根据 glob 模式匹配过滤命令
+- 支持数组形式配置多个匹配规则
 
 ### 0.0.1
 

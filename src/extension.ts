@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { minimatch } from 'minimatch';
 
 interface CommandConfig {
 	description: string;
@@ -8,6 +9,8 @@ interface CommandConfig {
 	when?: 'file' | 'folder' | 'any';
 	shell?: string;
 	loginShell?: boolean;
+	pathContains?: string | string[];
+	pathPattern?: string | string[];
 }
 
 interface CommandsConfig {
@@ -53,25 +56,38 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		// 根据资源类型过滤可用命令
+		// 根据资源类型和路径过滤可用命令
 		const resourceType = isFile ? 'file' : 'folder';
 		const availableCommands: QuickPickCommandItem[] = [];
 
 		for (const [key, cmdConfig] of Object.entries(commands)) {
+			// 检查 when 条件
 			const when = cmdConfig.when || 'any';
-			if (when === 'any' || when === resourceType) {
-				availableCommands.push({
-					label: cmdConfig.description || key,
-					description: key,
-					detail: cmdConfig.command,
-					commandKey: key,
-					config: cmdConfig
-				});
+			if (when !== 'any' && when !== resourceType) {
+				continue;
 			}
+
+			// 检查 pathContains 条件
+			if (cmdConfig.pathContains && !matchPathContains(fsPath, cmdConfig.pathContains)) {
+				continue;
+			}
+
+			// 检查 pathPattern 条件
+			if (cmdConfig.pathPattern && !matchPathPattern(fsPath, cmdConfig.pathPattern)) {
+				continue;
+			}
+
+			availableCommands.push({
+				label: cmdConfig.description || key,
+				description: key,
+				detail: cmdConfig.command,
+				commandKey: key,
+				config: cmdConfig
+			});
 		}
 
 		if (availableCommands.length === 0) {
-			vscode.window.showWarningMessage(`没有适用于${isFile ? '文件' : '文件夹'}的命令`);
+			vscode.window.showWarningMessage(`没有适用于当前路径的命令`);
 			return;
 		}
 
@@ -90,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const variables = buildVariables(fsPath, isFile, isFolder);
 
 		// 替换变量
-		let finalCommand = replaceVariables(selected.config.command, variables);
+		const finalCommand = replaceVariables(selected.config.command, variables);
 
 		// 构造 shell 命令
 		const shell = selected.config.shell || 'bash';
@@ -116,6 +132,22 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(disposable);
+}
+
+/**
+ * 检查路径是否包含指定字符串
+ */
+function matchPathContains(fsPath: string, pathContains: string | string[]): boolean {
+	const patterns = Array.isArray(pathContains) ? pathContains : [pathContains];
+	return patterns.some(pattern => fsPath.includes(pattern));
+}
+
+/**
+ * 检查路径是否匹配 glob 模式
+ */
+function matchPathPattern(fsPath: string, pathPattern: string | string[]): boolean {
+	const patterns = Array.isArray(pathPattern) ? pathPattern : [pathPattern];
+	return patterns.some(pattern => minimatch(fsPath, pattern, { matchBase: true }));
 }
 
 function buildVariables(fsPath: string, isFile: boolean, isFolder: boolean): Record<string, string> {
